@@ -1,0 +1,420 @@
+/* Assignment 1 "Best CPU Setup"
+Group - SS05*/
+
+#define _CRT_SECURE_NO_WARNINGS
+#include<stdio.h>
+#include<string.h>
+#include<stdint.h>
+
+#define LINE_LEN 15
+#define MEM_MAX 2047
+#define INS_MAX 1023
+#define OS_MAX 511
+uint8_t MEM[MEM_MAX + 1];
+uint8_t r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15;
+uint8_t flag;
+uint16_t pc, bp, sp;
+
+//Initializing memory, general purpose registers and special purpose registers.
+void cpu_init()
+{
+	for (int i = OS_MAX + 1; i <= MEM_MAX; i++)
+	{
+		MEM[i] = 0xff;
+	}
+	r0 = r1 = r2 = r3 = r4 = r5 = r6 = r7 = r8 = r9 = r10 = r11 = r12 = r13 = r14 = r15 = 0x00;
+	flag = 0;
+	pc = 0;
+	bp = INS_MAX + 1;
+	sp = 0;
+}
+
+//Converting register name to the operand value which CPU understands.
+uint8_t get_reg_code(char *ins)
+{
+	uint8_t code = 0x00;
+	ins++;  //GO TO NEXT POSITION BYPASS 'r'
+
+	switch (atoi(ins))
+	{
+	case 0:
+		code = 0x00;
+		break;
+	case 1:
+		code = 0x01;
+		break;
+	case 2:
+		code = 0x02;
+		break;
+	case 3:
+		code = 0x03;
+		break;
+	case 4:
+		code = 0x04;
+		break;
+	case 5:
+		code = 0x05;
+		break;
+	case 6:
+		code = 0x06;
+		break;
+	case 7:
+		code = 0x07;
+		break;
+	case 8:
+		code = 0x08;
+		break;
+	case 9:
+		code = 0x09;
+		break;
+	case 10:
+		code = 0x0A;
+		break;
+	case 11:
+		code = 0x0B;
+		break;
+	case 12:
+		code = 0x0C;
+		break;
+	case 13:
+		code = 0x0D;
+		break;
+	case 14:
+		code = 0x0E;
+		break;
+	case 15:
+		code = 0x0F;
+		break;
+	default:
+		printf("\nError in register read !");
+		break;
+	}
+	return code;
+}
+
+//Converts hex to decimal.
+int hex_to_dec(char ch)
+{
+	if (isdigit(ch))
+		return (ch - '0');
+	else if (islower(ch))
+		return (ch - 'a' + 10);
+	else if (isupper(ch))
+		return (ch - 'A' + 10);
+}
+
+//Read assembly language from text file and convert it to opcode and operands and store it in instruction memory.
+void asm_read()
+{
+	uint16_t ins = 512;
+	char line[LINE_LEN];
+	uint8_t lines = 0;
+	char *opc_s, *opr1_s, *opr2_s, *opr3_s;
+	uint8_t opc, opr1, opr2, opr3;
+
+	FILE *fp;
+	fp = fopen("assembly.txt", "r");
+
+	char ch = getc(fp);
+	while (ch != EOF)
+	{
+		if (ch == '\n')
+			lines++;
+		ch = getc(fp);
+	}
+	fp = fopen("assembly.txt", "r");
+	while (lines != 0)
+	{
+		fgets(line, LINE_LEN, fp);
+		opc_s = strtok(line, " ");
+		opr1_s = strtok(NULL, ",");
+		opr2_s = strtok(NULL, ",");
+		opr3_s = strtok(NULL, " ");
+		if (!strcmp(opc_s, "lw"))
+			opc = 0x00;
+		else if (!strcmp(opc_s, "sw"))
+			opc = 0x01;
+
+		opr1 = get_reg_code(opr1_s);
+		if (opc == 0x00 || opc == 0x01)
+		{
+			opr2 = (hex_to_dec(opr2_s[0]) << 4) | (hex_to_dec(opr2_s[1]));
+			opr3 = (hex_to_dec(opr2_s[2]) << 4) | (hex_to_dec(opr2_s[3]));
+		}
+		else
+		{
+			opr2 = get_reg_code(opr2_s);
+			opr3 = get_reg_code(opr3_s);
+		}
+
+		MEM[ins++] = opc;
+		MEM[ins++] = opr1;
+		MEM[ins++] = opr2;
+		MEM[ins++] = opr3;
+
+		printf("\n");
+		lines--;
+	}
+	fclose(fp);
+}
+
+//Display contents of memory, general purpose and special purpose registers.
+void display()
+{
+	int i, bit, j;
+
+	printf("\n\nContent of instruction Memory:\n\n");
+	printf("Addr  Value  Addr  Value  Addr  Value  Addr  Value  Addr  Value  Addr  Value\n");
+	for (i = OS_MAX + 1, j = 1; i <= INS_MAX; i++, j++)
+	{
+		printf("%03x    ", i);
+		printf("%02x    ", MEM[i]);
+		if (j % 6 == 0)
+			printf("\n");
+	}
+
+	printf("\n\nContent of Data Memory:\n\n");
+	printf("Addr  Value  Addr  Value  Addr  Value  Addr  Value  Addr  Value  Addr  Value\n");
+	for (i = INS_MAX + 1, j = 1; i <= MEM_MAX; i++, j++)
+	{
+		printf("%03X    ", i);
+		printf("%02x    ", MEM[i]);
+		if (j % 6 == 0)
+			printf("\n");
+	}
+
+	printf("\n\nContent of General Purpose Register:\n\n");
+	printf("R0 = %x\tR1 = %x\tR2 = %x\tR3 = %x\tR4 = %x\tR5 = %x\t R6 = %x\t R7 = %x\n", r0, r1, r2, r3, r4, r5, r6, r7);
+	printf("R8 = %x\tR9 = %x\tR10 = %x\tR11 = %x\tR12 = %x\tR13 = %x\tR14 = %x\tR15 = %x\n", r8, r9, r10, r11, r12, r13, r14, r15);
+
+	printf("\nContent of flag register:\t");
+
+	for (bit = 0; bit<8; bit++)  //Printing flags from LSB to MSB
+	{
+		printf("%i ", flag & 0x01);
+		flag = flag >> 1;
+	}
+
+	printf("\n\nContent of Program Counter:\t");
+	printf("%04x\n", pc);
+	printf("\nContent of Stack Pointer:\t");
+	printf("%04x\n", sp);
+	printf("\nContent of Base Pointer:\t");
+	printf("%04x\n", bp);
+	getch();
+}
+
+//Make some changes to memory and some register to demonstrate Assignment 1.
+void assignment1()
+{
+	MEM[1024] = 0x11;
+	r1 = 0x12;
+}
+
+//This function fetch data from memory and store it to general purpose register.
+void load_reg(uint8_t reg, uint16_t address)
+{
+
+	switch (reg)
+	{
+	case 0:
+		printf("\nLoading from memory to r0.\n");
+		r0 = MEM[address];
+		break;
+	case 1:
+		printf("\nLoading from memory to r1.\n");
+		r1 = MEM[address];
+		break;
+	case 2:
+		printf("\nLoading from memory to r2.\n");
+		r2 = MEM[address];
+		break;
+	case 3:
+		printf("\nLoading from memory to r3.\n");
+		r3 = MEM[address];
+		break;
+	case 4:
+		printf("\nLoading from memory to r4.\n");
+		r4 = MEM[address];
+		break;
+	case 5:
+		printf("\nLoading from memory to r5.\n");
+		r5 = MEM[address];
+		break;
+	case 6:
+		printf("\nLoading from memory to r6.\n");
+		r6 = MEM[address];
+		break;
+	case 7:
+		printf("\nLoading from memory to r7.\n");
+		r7 = MEM[address];
+		break;
+	case 8:
+		printf("\nLoading from memory to r8.\n");
+		r8 = MEM[address];
+		break;
+	case 9:
+		printf("\nLoading from memory to r9.\n");
+		r9 = MEM[address];
+		break;
+	case 10:
+		printf("\nLoading from memory to r10.\n");
+		r10 = MEM[address];
+		break;
+	case 11:
+		printf("\nLoading from memory to r11.\n");
+		r11 = MEM[address];
+		break;
+	case 12:
+		printf("\nLoading from memory to r12.\n");
+		r12 = MEM[address];
+		break;
+	case 13:
+		printf("\nLoading from memory to r13.\n");
+		r13 = MEM[address];
+		break;
+	case 14:
+		printf("\nLoading from memory to r14.\n");
+		r14 = MEM[address];
+		break;
+	case 15:
+		printf("\nLoading from memory to r15.\n");
+		r15 = MEM[address];
+		break;
+	default:
+		break;
+	}
+
+}
+
+//This function store general purpose register value to some memory location.
+void store_reg(uint8_t reg, uint16_t address)
+{
+
+	switch (reg)
+	{
+	case 0:
+		printf("\nStoring from r0 to memory.\n");
+		MEM[address] = r0;
+		break;
+	case 1:
+		printf("\nStoring from r1 to memory.\n");
+		MEM[address] = r1;
+		break;
+	case 2:
+		printf("\nStoring from r2 to memory.\n");
+		MEM[address] = r2;
+		break;
+	case 3:
+		printf("\nStoring from r3 to memory.\n");
+		MEM[address] = r3;
+		break;
+	case 4:
+		printf("\nStoring from r4 to memory.\n");
+		MEM[address] = r4;
+		break;
+	case 5:
+		printf("\nStoring from r5 to memory.\n");
+		MEM[address] = r5;
+		break;
+	case 6:
+		printf("\nStoring from r6 to memory.\n");
+		MEM[address] = r6;
+		break;
+	case 7:
+		printf("\nStoring from r7 to memory.\n");
+		MEM[address] = r7;
+		break;
+	case 8:
+		printf("\nStoring from r8 to memory.\n");
+		MEM[address] = r8;
+		break;
+	case 9:
+		printf("\nStoring from r9 to memory.\n");
+		MEM[address] = r9;
+		break;
+	case 10:
+		printf("\nStoring from r10 to memory.\n");
+		MEM[address] = r10;
+		break;
+	case 11:
+		printf("\nStoring from r11 to memory.\n");
+		MEM[address] = r11;
+		break;
+	case 12:
+		printf("\nStoring from r12 to memory.\n");
+		MEM[address] = r12;
+		break;
+	case 13:
+		printf("\nStoring from r13 to memory.\n");
+		MEM[address] = r13;
+		break;
+	case 14:
+		printf("\nStoring from r14 to memory.\n");
+		MEM[address] = r14;
+		break;
+	case 15:
+		printf("\nStoring from r15 to memory.\n");
+		MEM[address] = r15;
+		break;
+	default:
+		break;
+	}
+
+}
+
+//This function uses two 8 bit numbers and convert them to some memory location which can be used to store and load data from it.
+int make_address(uint8_t addr1, uint8_t addr2)
+{
+
+	uint16_t addr;
+	addr = (addr1 << 8) + addr2;
+	printf("\nAddress value = %d.\n", addr);
+	return addr;
+
+}
+
+//This function does the main execution. It reads opcode and operands from instruction memory and perform written steps.
+void main_execution()
+{
+
+	uint16_t address;
+	pc = 512;
+	while (MEM[pc] != 0XFF)
+	{
+		switch (MEM[pc])
+		{
+		case 0://Case for loading data from memory to register.
+			printf("\nInside load instruction.\n");
+			address = make_address(MEM[pc + 2], MEM[pc + 3]);
+			load_reg(MEM[pc + 1], address);
+			pc = pc + 4;
+			break;
+		case 1://Case for storing data from register to memory.
+			printf("\nInside store instruction.\n");
+			address = make_address(MEM[pc + 2], MEM[pc + 3]);
+			store_reg(MEM[pc + 1], address);
+			pc = pc + 4;
+			break;
+		default:
+			printf("\nWrong instruction.\n");
+		}
+		display();
+	}
+
+}
+
+int main()
+{
+	cpu_init();
+	printf("\nCpu state initially");
+	display();
+	assignment1();  //Presetting values of memory location and register r1 for assignment no. 1
+	display();
+	asm_read();
+	printf("\nCpu state after loading instructions into memory");
+	display();
+	main_execution();
+	getch();
+	return 0;
+}

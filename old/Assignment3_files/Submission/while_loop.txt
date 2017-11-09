@@ -1,0 +1,8 @@
+mvi r1,0004
+mvi r3,0001
+mov r5,r1
+lb0:beq r1,r3,lb1
+dec r1
+mul r5,r5,r1
+j lb0
+lb1:

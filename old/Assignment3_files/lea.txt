@@ -1,0 +1,90 @@
+#include<stdio.h>
+#include<conio.h>
+int ARR_IND_OUT_OF_BOUND = 0;
+int MEM_OUT_OF_BOUND = 0;
+int MEM_MAX = 2047;
+int MAX_ARR_SIZE = 20;
+uint8_t MEM[2048] = {1};
+int arr_size = 10;
+int r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15;
+int leaIns(uint8_t regaddr, uint8_t regindex, uint8_t wordSize);
+int getRegValue(uint8_t);
+void main()
+{
+	clrscr();
+	r10 = 2020; r11 = 2; r12 = 4;
+	printf("%d\n", leaIns(10, 11, 12));
+	printf("MEM_OUT_OF_BOUND is %d\n", MEM_OUT_OF_BOUND);
+	printf("ARR_IND_OUT_OF_BOUND is %d\n", ARR_IND_OUT_OF_BOUND);
+	getch();
+}
+int leaIns(uint8_t regbaseaddr, uint8_t regindex, uint8_t regwordsize)
+{
+	int baseaddr = getRegValue(regbaseaddr);
+	int index = getRegValue(regindex);
+	int wordsize = getRegValue(regwordsize);
+	if((wordsize != 1) & (wordsize != 2) & (wordsize != 4) & (wordsize != 8))
+	{
+		printf("Word size not correct\n");
+		return -1;
+	}
+	if(index < 0 | index >= arr_size)
+	{
+		ARR_IND_OUT_OF_BOUND = 1;
+		return -1;
+	}
+	else
+	{
+		ARR_IND_OUT_OF_BOUND = 0;
+		int finaladdr = baseaddr + index * wordsize;
+		if(finaladdr > MEM_MAX)
+		{
+			MEM_OUT_OF_BOUND = 1;
+			return -1;
+		}
+		else
+		{
+			MEM_OUT_OF_BOUND = 0;
+			return finaladdr;
+		}
+	}
+}
+int getRegValue(uint8_t reg)
+{
+	int regval;
+	switch(reg){
+	case 0:
+	{regval = r0; break;}
+	case 1:
+	{regval = r1; break;}
+	case 2:
+	{regval = r2; break;}
+	case 3:
+	{regval = r3; break;}
+	case 4:
+	{regval = r4; break;}
+	case 5:
+	{regval = r5; break;}
+	case 6:
+	{regval = r6; break;}
+	case 7:
+	{regval = r7; break;}
+	case 8:
+	{regval = r8; break;}
+	case 9:
+	{regval = r9; break;}
+	case 10:
+	{regval = r10; break;}
+	case 11:
+	{regval = r11; break;}
+	case 12:
+	{regval = r12; break;}
+	case 13:
+	{regval = r13; break;}
+	case 14:
+	{regval = r14; break;}
+	case 15:
+	{regval = r15; break;}
+	}
+	return regval;
+}
